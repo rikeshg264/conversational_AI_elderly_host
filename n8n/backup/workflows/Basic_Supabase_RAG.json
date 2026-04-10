@@ -1,0 +1,912 @@
+{
+  "name": "Basic Supabase RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.file_content }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "=file_id",
+                "value": "={{ $('Set file_id').first().json.file_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a0711062-a9c9-4671-8a1c-4067add6fd18",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        60,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 300
+      },
+      "id": "05882c1a-ad98-4861-9d03-b48edb959612",
+      "name": "Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        120,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "document_chunks",
+          "mode": "list",
+          "cachedResultName": "document_chunks"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "937278a8-618b-4c6b-9956-2aaf9a2798d4",
+      "name": "Insert into Supabase Vectorstore",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        260
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "FEYjJubHewA9HtZI",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "bb611a5a-a419-4a8c-99a4-2c9d8c8b80f6",
+      "name": "Extract Document Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        220
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        -20
+      ],
+      "id": "5c6b6bdc-a430-4183-b231-845766616e32",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/shared/document-file.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -840,
+        40
+      ],
+      "id": "2baa26b4-0169-48f9-803d-48124d819182",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9de9e545-ccc4-4721-9e8a-d34f77275a2b",
+              "name": "file_content",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        -20
+      ],
+      "id": "5d96231a-5aa1-4ceb-b9b8-9eedb8221efd",
+      "name": "PDF Set File Content"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9de9e545-ccc4-4721-9e8a-d34f77275a2b",
+              "name": "file_content",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        220
+      ],
+      "id": "4566c1e7-bb70-40d5-84fc-46e63c087921",
+      "name": "Text Set File Content"
+    },
+    {
+      "parameters": {
+        "triggerOn": "folder",
+        "path": "/data/shared",
+        "events": [
+          "add",
+          "change"
+        ],
+        "options": {
+          "followSymlinks": true,
+          "usePolling": false
+        }
+      },
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        160
+      ],
+      "id": "8704e45b-0964-452b-b5bf-66f700e66ea4",
+      "name": "Local File Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4d33afde-0da6-4fe9-baf2-def521ee0531"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "75a3f836-3ced-42ad-82ad-18d43b276ad8",
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -660,
+        180
+      ],
+      "id": "2a26dae4-de5d-4a48-96c5-085b503c3ae4",
+      "name": "Switch on file type"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1320,
+        160
+      ],
+      "id": "7e36251d-a433-4a78-8478-5bde157781a5",
+      "name": "Loop Over Files"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "667b4a3e-2829-41b0-9e04-3092826478c5",
+              "name": "file_id",
+              "value": "={{ $json.path }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1140,
+        40
+      ],
+      "id": "ee4b3c18-3762-44cc-b2e1-893f445e1ea1",
+      "name": "Set file_id"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Enable the pgvector extension if it is not already enabled\nCREATE EXTENSION IF NOT EXISTS vector;\n\n-- Drop the table if it exists\nDROP TABLE IF EXISTS document_chunks;\n\n-- Create a table to store your documents\nCREATE TABLE document_chunks (\n  id bigserial PRIMARY KEY,\n  content text,        -- corresponds to Document.pageContent\n  metadata jsonb,      -- corresponds to Document.metadata\n  embedding vector(3072) -- 1536 works for OpenAI embedding small, 3072 for large\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2020,
+        240
+      ],
+      "id": "123255a8-d083-44c2-bd96-4a38368ce54a",
+      "name": "Supabase Vector Table Setup",
+      "credentials": {
+        "postgres": {
+          "id": "DHocj7LzqGDaLYry",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Drop the function if it exists (using the parameter types)\nDROP FUNCTION IF EXISTS match_documents(vector, int, jsonb);\n-- Create a function to search for documents\nCREATE FUNCTION match_documents (\n  query_embedding vector(3072),\n  match_count int DEFAULT null,\n  filter jsonb DEFAULT '{}'\n) \nRETURNS TABLE (\n  id bigint,\n  content text,\n  metadata jsonb,\n  similarity float\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  RETURN QUERY\n  SELECT\n    d.id,\n    d.content,\n    d.metadata,\n    1 - (d.embedding <=> query_embedding) AS similarity\n  FROM document_chunks d\n  WHERE d.metadata @> filter\n  ORDER BY d.embedding <=> query_embedding\n  LIMIT match_count;\nEND;\n$$;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1780,
+        240
+      ],
+      "id": "accdd7c1-3b88-462b-8495-bbe6d4120f70",
+      "name": "Supabase Vector Match Documents Setup",
+      "credentials": {
+        "postgres": {
+          "id": "DHocj7LzqGDaLYry",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Setup project\nRun each of these once before running the project to setup the supabase tables\n\n## Postgres Supabase connection\n- **Host**: `host.docker.internal`\n- **Database**: `postgres`\n- **User**: `postgres.local-pooler`\n  - local-pooler comes from `POOLER_TENANT_ID`\n- **Password**: `POSTGRES_PASSWORD`\n",
+        "height": 540,
+        "width": 540,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2100,
+        -80
+      ],
+      "id": "3ab60f69-b40b-463d-a72f-04c759b6e5d1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM document_chunks\nWHERE metadata->>'file_id' = $1;",
+        "options": {
+          "queryReplacement": "={{ $json.file_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1020,
+        180
+      ],
+      "id": "926e655f-4c34-4f57-bc85-66605b3704fd",
+      "name": "Delete Old Chunks",
+      "credentials": {
+        "postgres": {
+          "id": "DHocj7LzqGDaLYry",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Load documents into Supabse RAG system\n\nClick \"Test workflow\" and a file to the `shared` folder in the repo",
+        "height": 820,
+        "width": 1920,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1540,
+        -80
+      ],
+      "id": "8faadd45-d4a6-44d3-ba6f-ba36a7dd9fc2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {},
+      "id": "db37d147-2cab-4398-909f-0d78ebcf4d90",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.1,
+      "position": [
+        -900,
+        1160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "DHocj7LzqGDaLYry",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "documents",
+        "topK": 5
+      },
+      "id": "282e30d8-55bd-44d2-b98f-8ab193c81a5b",
+      "name": "Vector Store Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ca75ff09-9c0f-40eb-8762-740f87c9b2ab",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1400,
+        900
+      ],
+      "webhookId": "4b3b1838-d6b3-447e-9d79-d0931eddb9f8"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5834ca0a-549c-4814-a7f2-7f747200a97e",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -680,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8a48c1b1-c66d-4b0b-acc7-17c65923c8b1",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -1020,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        1020
+      ],
+      "id": "56349edf-2ac6-4c91-a886-d02cb7cd7442",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "FEYjJubHewA9HtZI",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Basic RAG Chatbot\nVery basic chat bot over the files loaded above",
+        "height": 640,
+        "width": 1920,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1540,
+        760
+      ],
+      "id": "bf93d500-f9da-4f7b-b9d1-893fd9c9812b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -380,
+        1240
+      ],
+      "id": "a9e735c7-5e1c-4b75-9384-1c51d938bb3a",
+      "name": "Embeddings OpenAI - Out",
+      "credentials": {
+        "openAiApi": {
+          "id": "1WLiazDSNYXvqhGs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {}
+      },
+      "id": "2d03e42b-1591-4a75-9e9f-c2d8bc7dafb6",
+      "name": "Embeddings OpenAI - In",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "1WLiazDSNYXvqhGs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -140,
+        1100
+      ],
+      "id": "7e04ef7a-b35f-4324-ada3-f5e69be6ee65",
+      "name": "RAG Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1WLiazDSNYXvqhGs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1080,
+        1100
+      ],
+      "id": "500dc38c-2220-4c2d-b297-0dcdaba4f08c",
+      "name": "Decision making model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1WLiazDSNYXvqhGs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "75ebfdef-c8e2-4c3e-b716-1479d0cc2a73",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "59b7a20f-0626-4861-93e2-015d430c266e",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "68ad086a-a77c-4c85-95eb-569f79bef054",
+      "name": "Set Input Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Project Info\n\nThis is a super super basic RAG system that you can ask questoins over document chunks.\n\nThe primary purporse of this is to show how to connect to supabase from N8N when running then both locally from here:\n\nhttps://github.com/ssp6/host-n8n-supabase\n",
+        "height": 260,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1540,
+        -360
+      ],
+      "id": "24e1ce71-208a-4135-8681-b103109e3a0f",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Document Text": {
+      "main": [
+        [
+          {
+            "node": "Text Set File Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Switch on file type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "PDF Set File Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Set File Content": {
+      "main": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Set File Content": {
+      "main": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local File Trigger": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Files": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set file_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on file type": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Document Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set file_id": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Chunks": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Supabase Vectorstore": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Set Input Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI - Out": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI - In": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision making model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "96b4462c-744c-45a5-8dc1-1491f18970d2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bfeb5c2f6068ccbdad0da2566c33b9daccbefdf3c0c58e61e95f92a7d2289631"
+  },
+  "id": "lLxVPRiOMYpPTSjJ",
+  "tags": []
+}
